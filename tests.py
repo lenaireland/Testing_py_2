@@ -31,8 +31,23 @@ class PartyTests(unittest.TestCase):
         self.assertIn(b"123 Magic Unicorn Way", result.data)
         self.assertNotIn(b"Please RSVP", result.data)
 
+class PartyTestsLoggedin(unittest.TestCase):
+    """Tests for my party site."""
 
-class PartyTestsDatabase(unittest.TestCase):
+    def setUp(self):
+        self.client = app.test_client()
+        app.config['TESTING'] = True
+
+        with self.client as c:
+            with c.session_transaction() as sess:
+                sess['RSVP']= 1 
+
+    def test_rsvp_loggedin(self):
+        result = self.client.get("/")
+        self.assertIn(b"123 Magic Unicorn Way", result.data)
+        self.assertNotIn(b"Please RSVP", result.data)
+
+class PartyTestsDatabaseLoggedout(unittest.TestCase):
     """Flask tests that use the database."""
 
     def setUp(self):
@@ -55,12 +70,46 @@ class PartyTestsDatabase(unittest.TestCase):
         db.session.close()
         db.drop_all()
 
-    def test_games(self):
+    def test_games_loggedout(self):
+        # FIXME: test that the games page displays the game from example_data()
+        result = self.client.get("/games", follow_redirects=False)
+        self.assertEqual(result.status_code, 302)
+
+        result = self.client.get("/games", follow_redirects=True)
+        self.assertIn(b"Please RSVP", result.data)
+
+class PartyTestsDatabaseLoggedin(unittest.TestCase):
+    """Flask tests that use the database."""
+
+    def setUp(self):
+        """Stuff to do before every test."""
+
+        self.client = app.test_client()
+        app.config['TESTING'] = True
+
+        # Connect to test database (uncomment when testing database)
+        connect_to_db(app, "postgresql:///testdb")
+
+        # Create tables and add sample data (uncomment when testing database)
+        db.create_all()
+        example_data()
+
+        with self.client as c:
+            with c.session_transaction() as sess:
+                sess['RSVP']= 1 
+
+    def tearDown(self):
+        """Do at end of every test."""
+
+        # (uncomment when testing database)
+        db.session.close()
+        db.drop_all()
+
+    def test_games_loggedin(self):
         # FIXME: test that the games page displays the game from example_data()
         result = self.client.get("/games")
         self.assertIn(b"blackjack", result.data)
         self.assertIn(b"card game", result.data)
-
 
 if __name__ == "__main__":
     unittest.main()

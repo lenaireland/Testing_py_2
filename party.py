@@ -30,8 +30,10 @@ def rsvp():
 
 @app.route("/games")
 def games():
-    games = Game.query.all()
-    return render_template("games.html", games=games)
+    if session.get('RSVP'):
+        games = Game.query.all()#pulling in all games from dB
+        return render_template("games.html", games=games)
+    return redirect('/')
 
 
 if __name__ == "__main__":
